@@ -1,2 +1,4 @@
-Program.exe
 roms/*
+**/Program.exe
+**/target
+**/Cargo.lock

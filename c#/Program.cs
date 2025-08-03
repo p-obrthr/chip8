@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -45,6 +46,8 @@ class Chip8Interpreter
     // timers
     private byte _delayTimer = 0;
     private byte _soundTimer = 0;
+
+    private bool[] _keys = new bool[16];
 
     public Chip8Interpreter(string filePath)
     {
@@ -105,11 +108,7 @@ class Chip8Interpreter
                 break;
 
             DecodeAndExecute(inst);
-            if (_delayTimer > 0)
-                _delayTimer--;
-            if (_soundTimer > 0)
-                _soundTimer--;
-            Render();
+            UpdateTimers();
 
             var elapsed = sw.Elapsed.TotalMilliseconds;
             var sleepTime = cycleDelayMs - elapsed;
@@ -132,6 +131,14 @@ class Chip8Interpreter
         return new Instruction(firstByte, secondByte);
     }
 
+    private void UpdateTimers()
+    {
+        if (_delayTimer > 0)
+            _delayTimer--;
+        if (_soundTimer > 0)
+            _soundTimer--;
+    }
+
     public void DecodeAndExecute(Instruction inst)
     {
         switch (inst)
@@ -139,6 +146,7 @@ class Chip8Interpreter
             // clear screen
             case { Opcode: 0x00E0 }:
                 ClearScreen();
+                Render();
                 break;
             // returning subroutine
             case { Opcode: 0x00EE }:
@@ -183,6 +191,10 @@ class Chip8Interpreter
             // display/draw
             case { Indicator: 0xD }:
                 DrawSprite(inst.X, inst.Y, inst.N);
+                Render();
+                break;
+            case { Indicator: 0xE }:
+                KeyAction(inst);
                 break;
             case { Indicator: 0xF }:
                 TimerActions(inst);
@@ -382,10 +394,40 @@ class Chip8Interpreter
                     _v[i] = _memory[_i + i];
                 }
                 break;
+            case 0x0A:
+                bool keyPressed = false;
+                for (int i = 0; i < _keys.Length; i++)
+                {
+                    if (_keys[i])
+                    {
+                        _v[inst.X] = (byte)i;
+                        keyPressed = true;
+                        break;
+                    }
+                }
+                if (!keyPressed)
+                {
+                    _pc -= 2;
+                }
+                break;
             default:
                 break;
         }
     }
+
+    private void KeyAction(Instruction inst)
+    {
+        switch(inst.NN)
+        {
+            case 0x9E:
+                break;
+            case 0xA1:
+                break;
+            default:
+                break;
+        }
+    }
+
 }
 
 class Instruction
